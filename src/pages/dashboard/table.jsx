@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Box,  Card,  CardMedia, Grid, Link, Pagination, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useTheme } from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
+import { Box,  Card,  CardMedia,  Hidden, Link, MenuItem, Pagination, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useTheme } from '@mui/material';
 import { baseURL } from '../../utils/constantes';
 import LogoYoutube from '../../assets/images/logo_youtube.png'
 import axios from 'axios'
 import moment from 'moment'
 import Search from '../../components/search';
+import debounce from 'lodash/debounce';
 
 function createData(flightNumber, logo, mission, releaseDate, rocket, result, video) {
   return { flightNumber, logo, mission, releaseDate, rocket, result, video };
@@ -95,7 +96,7 @@ function useFetch(url) {
         return setError(error)
       })
       .finally(() => setLoading(false))
-  })
+  },[url])
 
   return { data, loading, error }
 }
@@ -112,6 +113,7 @@ function OrderTableHead({ order, orderBy }) {
             align={headCell.align}
             padding={headCell.disablePadding ? 'none' : 'normal'}
             sortDirection={orderBy === headCell.id ? order : false}
+            sx={{fontSize: '.9rem'}}
           >
             {headCell.label}
           </TableCell>
@@ -159,20 +161,44 @@ export default function LaunchTables() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
-  const {data, loading} = useFetch(baseURL + `/launches?search=${search}&pageSize=${pageSize}&pageNumber=${page}`)
   const [rows, setRow] = useState([]);
+  const {data, loading} = useFetch(baseURL + `/launches?search=${search}&pageSize=${pageSize}&pageNumber=${page}`)
+  
+  const handleChangePage = useCallback(
+    debounce((event, newPage) => {
+      setPage(newPage);
+    }, 500),
+    []
+  );
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+  const handleChangeItemsPerPage = useCallback(
+    debounce((event) => {
+      setPageSize(event.target.value);
+      setPage(1);
+    }, 500),
+    []
+  );
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-  const handleSearch = (searchValue) => {
-    setSearch(searchValue);
-  };
+  const handleSearch = useCallback(
+    debounce((searchValue) => {
+      setSearch(searchValue);
+      setPage(1);
+    }, 500),
+    []
+  );
+
+  useEffect(() => {
+    handleSearch(search);
+  }, [search, handleSearch]);
+
+  useEffect(() => {
+    handleChangePage(null, page);
+  }, [ page, handleChangePage]);
+
+
+  useEffect(() => {
+    handleChangeItemsPerPage({ target: { value: pageSize } });
+  }, [pageSize, handleChangeItemsPerPage]);
 
   useEffect(() => {
     if (data) {
@@ -181,14 +207,28 @@ export default function LaunchTables() {
       })
       setRow(rows)
     }
-  }, [data]);
+  },[data]);
 
   const isSelected = (flightNumber) => selected.indexOf(flightNumber) !== -1;
 
   return (
     <div>
-      <Box display={'flex'} justifyContent={'end'} justifyItems={'end'}>
+      <Box width={'100%'}>
           <Search onSearch={handleSearch} />
+          <Box display="flex" alignItems="center" justifyContent="flex-end" px={2} py={1}>
+            <Typography sx={{ paddingRight: 1 }}>Itens por página:</Typography>
+            <Select
+            value={pageSize}
+            onChange={handleChangeItemsPerPage}
+              size="small"
+              label="Itens por página"
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+              <MenuItem value={30}>30</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+            </Select>
+        </Box>
       </Box>
       <Card
             content={false}
@@ -206,7 +246,7 @@ export default function LaunchTables() {
             position: 'relative',
             display: 'block',
             maxWidth: '100%',
-            '& td, & th': { whiteSpace: 'nowrap' }
+         
           }}
         >
           <Table
@@ -220,13 +260,18 @@ export default function LaunchTables() {
               }
             }}
           >
-            <OrderTableHead order={order} orderBy={orderBy} />
+            <Hidden smDown>
+              <OrderTableHead order={order} orderBy={orderBy} />
+            </Hidden>
+            { loading && <p>Loading ...</p>}
             <TableBody>
               {stableSort(rows, getComparator(order, orderBy)).map((row, index) => {
                 const isItemSelected = isSelected(row.flightNumber);
 
                 return (
-                  <TableRow
+                  <>
+                  <Hidden smDown>
+                   <TableRow
                   key={row.flightNumber}
                     hover
                     role="checkbox"
@@ -238,7 +283,7 @@ export default function LaunchTables() {
                     <TableCell component="th" id={row.flightNumber} scope="row" align="left">
                     <Typography>{row.flightNumber}</Typography></TableCell>
                     <TableCell align="center">
-                        <CardMedia component="img" src={row.logo} alt='`logo ${row.mission}`' style={{ height: '4rem', width: '4rem' }} />
+                        <CardMedia component="img" src={row.logo} alt='`logo ${row.mission}`' style={{ height: '3rem', width: '3rem' }} />
                     </TableCell>
                     <TableCell align="left"><Typography>{row.mission}</Typography></TableCell>
                     <TableCell align="left"><Typography>{row.releaseDate}</Typography></TableCell>
@@ -248,16 +293,50 @@ export default function LaunchTables() {
                     </TableCell>
                     <TableCell component="th" scope="row" align="right">
                     <Link href={row.video} underline="none" align="right">
-                      <CardMedia component="img" src={LogoYoutube} alt='`link youtube' style={{ height: '4rem', width: '4rem' }} />
+                      <CardMedia component="img" src={LogoYoutube} alt='`link youtube' style={{ height: '3rem', width: '3rem' }} />
                       </Link>
                     </TableCell>
                   </TableRow>
+                  </Hidden>
+                  <Hidden smUp>
+                    <TableRow
+                    key={row.flightNumber}
+                      hover
+                      role="checkbox"
+                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      selected={isItemSelected}
+                    >
+                      <TableCell component="th" id={row.flightNumber} scope="row" align="center">
+                        <Typography>{row.flightNumber}</Typography>
+                        <div >
+                        <CardMedia component="img" src={row.logo} alt='`logo ${row.mission}`' style={{ height: '2.5rem', width: '2.5rem', margin:'0 auto' }} />
+
+                        </div>
+                      </TableCell>
+                      <TableCell align="center" style={{ wordBreak: 'break-word', minWidth: 50 }}>
+                        <Typography fontWeight={600}>{row.mission}</Typography>
+                        <Typography>{row.rocket}</Typography>
+                        <Typography>{row.releaseDate}</Typography>
+                      </TableCell>
+                      <TableCell align="left">
+                        <Link href={row.video} underline="none" align="right">
+                          <CardMedia component="img" src={LogoYoutube} alt='`link youtube' style={{ height: '2.5rem', width: '2.5rem' }} />
+                        </Link>
+                        <OrderStatus status={row.result} />
+                      </TableCell>
+                    </TableRow>
+                  </Hidden>
+                  
+                  </>
+                 
                 );
               })}
-            </TableBody>
+            </TableBody> 
           </Table>
         <Box display={'flex'} justifyContent={'end'} sx={{my:5, mr: 5}}>
-          <Pagination count={data?.totalPages} variant="outlined" color="primary" onChange={handleChangePage} hidePrevButton={!data?.hasPrev} hideNextButton={!data?.hasNext} />
+          <Pagination count={data?.totalPages} page={page} variant="outlined" color="primary" onChange={handleChangePage} hidePrevButton={!data?.hasPrev} hideNextButton={!data?.hasNext} />
         </Box>
         </TableContainer>
       </Box>
