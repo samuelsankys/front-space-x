@@ -2,6 +2,8 @@
 
 Este é um desafio para desenvolver o frontend da API RestFul desenvolvido neste mesmo repositório.
 
+[Vídeo de apresentação do projeto](https://www.loom.com/share/df0cbba02330454591ad30bb5bc702aa?sid=c5457e16-145b-4bff-9f2b-f008c0bd938b)
+
 ### 🛠 Tecnologias utilizadas
 
 As seguintes ferramentas foram usadas na construção do projeto:
