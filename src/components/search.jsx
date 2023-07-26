@@ -31,6 +31,7 @@ const Search = ({onSearch}) => {
                 inputProps={{
                 'aria-label': 'weight'
                 }}
+                sx={{ display: 'flex', width: '100%' }}
             />
                 <Box sx={{ml:2 }}>
                     <Button  onClick={handleSearchClick}>Buscar</Button>

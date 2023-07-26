@@ -6,7 +6,6 @@ import {baseURL} from '../../utils/constantes'
 const barChartOptions =  {
   chart: {
     type: 'bar',
-    height: 350,
     stacked: true,
     toolbar: {
       show: true
@@ -37,11 +36,11 @@ const barChartOptions =  {
         }
       }
     },
-
   },
   legend: {
-    position: 'right',
-    offsetY: 40
+    position: 'bottom',
+        offsetX: -10,
+        offsetY: 7
   },
   fill: {
     opacity: 5
@@ -75,7 +74,7 @@ const LaunchBarChart = () => {
   return (
     <div id="launch-chart">
       {loading && <p>Loading ...</p>} 
-      <ReactApexChart options={options} series={series} type="bar" height={365} />
+      <ReactApexChart options={options} series={series} type="bar" height={'300'} />
 
     </div>
   );
