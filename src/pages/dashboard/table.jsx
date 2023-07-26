@@ -6,6 +6,7 @@ import axios from 'axios'
 import moment from 'moment'
 import Search from '../../components/search';
 import debounce from 'lodash/debounce';
+import queryString from 'query-string';
 
 function createData(flightNumber, logo, mission, releaseDate, rocket, result, video) {
   return { flightNumber, logo, mission, releaseDate, rocket, result, video };
@@ -151,16 +152,21 @@ const OrderStatus = ({ status }) => {
   );
 };
 
+const updateURL = (searchValue, pageSizeValue, pageNumberValue) => {
+  const queryParams = queryString.stringify({ search: searchValue, page: pageNumberValue, limit: pageSizeValue });
+  const newURL = `${window.location.pathname}?${queryParams}`;
+  window.history.pushState(null, '', newURL);
+};
 
 export default function LaunchTables() {
-  
+
   const [order] = useState('desc');
   const [orderBy] = useState('flight_number');
   const [selected] = useState([]);
 
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
   const [rows, setRow] = useState([]);
   const {data, loading} = useFetch(baseURL + `/launches?search=${search}&pageSize=${pageSize}&pageNumber=${page}`)
   
@@ -195,6 +201,10 @@ export default function LaunchTables() {
     handleChangePage(null, page);
   }, [ page, handleChangePage]);
 
+  useEffect(() => {
+    updateURL(search, pageSize, page)
+  }, [ search, pageSize, page]);
+
 
   useEffect(() => {
     handleChangeItemsPerPage({ target: { value: pageSize } });
@@ -206,6 +216,7 @@ export default function LaunchTables() {
         return createData(item.flight_number, item.links.patch_small, item.name, moment(item.date_utc).format('DD/MM/YYYY'), item.rockets.name ,item.success, item.links.webcast)
       })
       setRow(rows)
+      
     }
   },[data]);
 
